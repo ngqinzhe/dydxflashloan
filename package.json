@@ -1,0 +1,22 @@
+{
+  "name": "dydx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.3.2",
+    "@truffle/hdwallet-provider": "^1.5.1",
+    "dotenv": "^10.0.0",
+    "ethereumjs-tx": "^2.1.2",
+    "fs": "0.0.1-security",
+    "solc": "^0.8.9",
+    "web3": "^1.6.0"
+  },
+  "type": "commonjs"
+}
