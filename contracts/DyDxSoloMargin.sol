@@ -116,7 +116,8 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
 
         // ARBITRAGE LOGIC HERE ...
         uint256 tradeAmount = repayAmount;
-        UniswapPath(swapPath, tradeAmount, 0);
+        uint256 receivedAmount = UniswapPath(swapPath, tradeAmount, 0);
+        getWETH(receivedAmount);
         // More code here...
         emit Log("bal", bal);
         emit Log("repay", repayAmount);
@@ -127,7 +128,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         address[] memory myPath,
         uint256 amountIn,
         uint256 amountOutMin
-    ) public payable {
+    ) public payable returns (uint256) {
         // prevent front running
         require(IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, 0), "front-running approval failed");
         require(
@@ -136,7 +137,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         );
 
         // SWAP OF TOKENS
-        IUniswapV2Router02(UNISWAP_V2_ROUTER)
+        uint256[] memory output = IUniswapV2Router02(UNISWAP_V2_ROUTER)
             .swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
@@ -144,6 +145,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
                 address(this),
                 block.timestamp
             );
+        return output[output.length - 1];
         // require(
         //     output[output.length - 1] > amountIn,
         //     "not a profitable arbitrage"

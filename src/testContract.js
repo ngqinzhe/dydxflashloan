@@ -15,7 +15,7 @@ const WBTC = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
 const account = process.env.ACCOUNT_ID;
 const pkey = process.env.PRIVATE_KEY;
 const pkeybuffer = Buffer.from(pkey, "hex");
-const contractAddress = "0x299bB41af433c0dcfE0528E562D6cf95194DfCD4";
+const contractAddress = "0x58A1c8D7cD28E2C309563A37D8034c8aaA5f52a2";
 
 // WEB3 CONFIGURATIONS WITH CONTRACT
 const web3 = new Web3(new Web3.providers.HttpProvider(network));
@@ -150,15 +150,13 @@ const flashloan = async (value) => {
         WETH,
         web3.utils.toWei(value, "ether")
     );
-    console.log("gas error");
+    console.log("Contract Reverted. Error in contract.");
     const options = {
         to: tx._parent._address,
         data: tx.encodeABI(),
         gas: await tx.estimateGas({ from: account }),
     };
-    console.log("accounts eror");
     const signed = await web3.eth.accounts.signTransaction(options, pkey);
-    console.log("send tx error");
     await web3.eth
         .sendSignedTransaction(signed.rawTransaction)
         .on("receipt", (result) => {
@@ -169,7 +167,6 @@ const flashloan = async (value) => {
                 result.transactionHash
             );
         });
-    console.log("ended last");
 };
 
 const convertWETHtoETH = async () => {
@@ -275,8 +272,7 @@ const getPath = async () => {
 
 const main = async () => {
     const path = [WETH, DAI, WBTC, WETH];
-    await flashloan('0.1');
+    await flashloan('10');
+
 }
-
-
 main();
