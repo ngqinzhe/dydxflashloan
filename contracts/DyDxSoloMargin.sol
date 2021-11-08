@@ -17,8 +17,7 @@ interface IWETH {
 contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     // ROUTER ADDRESSES
     address private constant SOLO = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-    address private constant UNISWAP_V2_ROUTER =
-        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address private constant UNISWAP_V2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     // ERC20 TOKENS ADDRESSES
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -30,7 +29,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
 
     // ERC20 PATH GENERATED
     address[] private swapPath;
-    uint private counter;
+    bool pathInserted;
 
     // OWNER ADDRESS
     address public OWNER;
@@ -50,7 +49,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
 
     constructor() payable {
         swapPath = new address[](4);
-        counter = 0;
+        pathInserted = false;
         OWNER = msg.sender;
         getWETH(msg.value);
         // _getWeth(msg.value);
@@ -116,8 +115,7 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         require(bal >= repayAmount, "bal < repay");
 
         // ARBITRAGE LOGIC HERE ...
-        // ERROR HERE, MIGHT BE REVERTING BECAUSE THE TRANSACTION DOESNT YIELD POSITIVE ETH
-        uint256 tradeAmount = IERC20(WETH).balanceOf(address(this));
+        uint256 tradeAmount = repayAmount;
         UniswapPath(swapPath, tradeAmount, 0);
         // More code here...
         emit Log("bal", bal);
@@ -131,14 +129,14 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         uint256 amountOutMin
     ) public payable {
         // prevent front running
-        IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, 0);
+        require(IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, 0), "front-running approval failed");
         require(
             IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, amountIn),
             "approval failed"
         );
 
         // SWAP OF TOKENS
-        uint256[] memory output = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+        IUniswapV2Router02(UNISWAP_V2_ROUTER)
             .swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
@@ -146,10 +144,10 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
                 address(this),
                 block.timestamp
             );
-        require(
-            output[output.length - 1] > amountIn,
-            "not a profitable arbitrage"
-        );
+        // require(
+        //     output[output.length - 1] > amountIn,
+        //     "not a profitable arbitrage"
+        // );
     }
 
     // get weth function
@@ -197,18 +195,18 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     }
     
     // trading path
-    function generatePath(address tokenAddress) external onlyOwner {
-        swapPath[counter] = tokenAddress;
-        counter ++;
+    function generatePath(address[] memory tokenAddressPath) external onlyOwner {
+        swapPath = tokenAddressPath;
+        pathInserted = true;
     }
 
-    function getPath() external onlyOwner view returns (uint) {
-        return counter;
+    function getPath() external onlyOwner view returns (bool) {
+        return pathInserted;
     }
 
     function resetPath() external onlyOwner {
         swapPath = new address[](4);
-        counter = 0;
+        pathInserted = false;
     }
 }
 // SOLO margin contract mainnet - 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e

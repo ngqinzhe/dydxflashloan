@@ -15,7 +15,7 @@ const WBTC = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
 const account = process.env.ACCOUNT_ID;
 const pkey = process.env.PRIVATE_KEY;
 const pkeybuffer = Buffer.from(pkey, "hex");
-const contractAddress = "0x9492AAe0411eE07641339040488BB2e681efa734";
+const contractAddress = "0x299bB41af433c0dcfE0528E562D6cf95194DfCD4";
 
 // WEB3 CONFIGURATIONS WITH CONTRACT
 const web3 = new Web3(new Web3.providers.HttpProvider(network));
@@ -274,14 +274,9 @@ const getPath = async () => {
  */
 
 const main = async () => {
-    const path = [WETH, DAI, USDT, WETH];
-    //await uniswapPath(path, "20000", "0");
-    // for (let i = 1; i < path.length; ++i) {
-    //     await generatePath(path[i]);
-    // }
-    await flashloan('10');
-    //await getOwnerBalance();
-    //await getPath();
-};
+    const path = [WETH, DAI, WBTC, WETH];
+    await flashloan('0.1');
+}
+
 
 main();
