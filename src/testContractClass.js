@@ -3,13 +3,37 @@ const path = require("path");
 var Tx = require("ethereumjs-tx").Transaction;
 const Web3 = require("web3");
 const fs = require("fs");
+const axios = require("axios");
 const network = process.env.LOCAL_TESTNET;
 
 // TOKEN ADDRESSES
-const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const WBTC = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
+const TOKEN = {
+    "WETH" : "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "DAI" : "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "USDT" : "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "USDC" : "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "WBTC" : "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    "SEAL" : "0x33c2DA7Fd5B125E629B3950f3c38d7f721D7B30D",
+    "SUSHI" : "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+    "LINK" : "0x514910771af9ca656af840dff83e8264ecf986ca",
+    "KNC" : "0xdeFA4e8a7bcBA345F687a2f1456F5Edd9CE97202",
+    "KP3R" : "0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44",
+}
+
+
+const UNISWAPSUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2";
+const UNISWAPTOKEN = {
+    "WETH" : "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "DAI" : "0x6b175474e89094c44da98b954eedeac495271d0f",
+    "USDT" : "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "USDC" : "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "WBTC" : "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+    "SEAL" : "0x33c2da7fd5b125e629b3950f3c38d7f721d7b30d",
+    "SUSHI" : "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+    "LINK" : "0x514910771af9ca656af840dff83e8264ecf986ca",
+    "KNC" : "0xdefa4e8a7bcba345f687a2f1456f5edd9ce97202",
+    "KP3R" : "0x1ceb5cb57c4d4e2b2433641b95dd330a33185a44",
+}
 
 // ACCOUNT CONFIGURATIONS
 const account = process.env.ACCOUNT_ID;
@@ -34,6 +58,25 @@ const abi = JSON.parse(
     )
 );
 var contract = new web3.eth.Contract(abi, contractAddress);
+
+class UniswapAPI {
+    static tokenPrice = (tokenAddress) => {
+        var price;
+        let body = {
+            query: `
+                query TokenPrice($id: ID!) {
+                    token(id: $id) {
+                        symbol
+                        derivedETH
+                    }
+                }`,
+                variables: {id: tokenAddress}
+        }
+        return axios.post(UNISWAPSUBGRAPH_URL, body).then((res) => {
+            return res.data.data.token.derivedETH;
+        });
+    }
+}
 
 class TestContractClass {
     static getWETHBalance = () => {
@@ -262,8 +305,13 @@ class TestContractClass {
 }
 
 const main = async () => {
-    const path = [WETH, DAI, WBTC, WETH];
-    await TestContractClass.getWETHBalance();
-
+    //await TestContractClass.getWETHBalance();
 }
-main();
+
+main()
+
+
+UniswapAPI.tokenPrice(UNISWAPTOKEN["WETH"]).then((res) => {
+    console.log(res);
+});
+
