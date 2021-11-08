@@ -17,7 +17,8 @@ interface IWETH {
 contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     // ROUTER ADDRESSES
     address private constant SOLO = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-    address private constant UNISWAP_V2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address private constant UNISWAP_V2_ROUTER =
+        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     // ERC20 TOKENS ADDRESSES
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -48,12 +49,9 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     }
 
     constructor() payable {
-        swapPath = new address[](4);
         pathInserted = false;
         OWNER = msg.sender;
         getWETH(msg.value);
-        // _getWeth(msg.value);
-        // _approveWeth(msg.value);
     }
 
     // allow contract to receive ETH
@@ -64,24 +62,11 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         payable
     {
         ISoloMargin solo = ISoloMargin(SOLO);
-
-        // Get marketId from token address
-        /*
-    0	WETH
-    1	SAI
-    2	USDC
-    3	DAI
-    */
         uint256 marketId = _getMarketIdFromTokenAddress(SOLO, _token);
 
         // Calculate repay amount (_amount + (2 wei))
         uint256 repayAmount = _getRepaymentAmountInternal(_amount);
         IERC20(_token).approve(SOLO, repayAmount);
-        /*
-    1. Withdraw
-    2. Call callFunction()
-    3. Deposit back
-    */
 
         Actions.ActionArgs[] memory operations = new Actions.ActionArgs[](3);
 
@@ -118,6 +103,8 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         uint256 tradeAmount = repayAmount;
         uint256 receivedAmount = UniswapPath(swapPath, tradeAmount, 0);
         getWETH(receivedAmount);
+        require(IERC20(WETH).balanceOf(address(this)) >= repayAmount, "Not enough WETH to repay loan after swaps");
+
         // More code here...
         emit Log("bal", bal);
         emit Log("repay", repayAmount);
@@ -130,7 +117,10 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
         uint256 amountOutMin
     ) public payable returns (uint256) {
         // prevent front running
-        require(IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, 0), "front-running approval failed");
+        require(
+            IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, 0),
+            "front-running approval failed"
+        );
         require(
             IERC20(myPath[0]).approve(UNISWAP_V2_ROUTER, amountIn),
             "approval failed"
@@ -145,17 +135,15 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
                 address(this),
                 block.timestamp
             );
+        require(
+            output[output.length - 1] > amountIn,
+            "Not a profitable arbitrage"
+        );
         return output[output.length - 1];
-        // require(
-        //     output[output.length - 1] > amountIn,
-        //     "not a profitable arbitrage"
-        // );
     }
 
     // get weth function
     function getWETH(uint256 amount) public payable {
-        // (bool success, ) = WETH.call{value: amount}("");
-        // require(success, "failed to wrap ether");
         IWETH(WETH).deposit{ value: amount }();
     }
 
@@ -195,20 +183,18 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     {
         return IERC20(_token).balanceOf(address(this));
     }
-    
+
     // trading path
-    function generatePath(address[] memory tokenAddressPath) external onlyOwner {
+    function generatePath(address[] memory tokenAddressPath)
+        external
+        onlyOwner
+    {
         swapPath = tokenAddressPath;
         pathInserted = true;
     }
 
-    function getPath() external onlyOwner view returns (bool) {
+    function getPath() external view onlyOwner returns (bool) {
         return pathInserted;
-    }
-
-    function resetPath() external onlyOwner {
-        swapPath = new address[](4);
-        pathInserted = false;
     }
 }
 // SOLO margin contract mainnet - 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e

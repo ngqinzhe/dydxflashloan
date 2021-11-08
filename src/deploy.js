@@ -26,7 +26,7 @@ const abi = JSON.parse(
         )
     )
 );
-const amountToDeploywithContract = web3.utils.toWei("1", "ether");
+const amountToDeploywithContract = web3.utils.toWei("10", "ether");
 
 const deployContract = async () => {
     await web3.eth.getTransactionCount(account, (err, txCount) => {
