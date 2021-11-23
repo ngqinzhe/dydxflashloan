@@ -7,35 +7,8 @@ import "../interfaces/ICallee.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-
-interface IOneSplit {
-    // interface for 1inch exchange.
-    function getExpectedReturn(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 amount,
-        uint256 parts,
-        uint256 disableFlags
-    )
-        external
-        view
-        returns (uint256 returnAmount, uint256[] memory distribution);
-
-    function swap(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 amount,
-        uint256 minReturn,
-        uint256[] memory distribution,
-        uint256 disableFlags
-    ) external payable;
-}
-
-interface IWETH {
-    function withdraw(uint256 amount) external;
-
-    function deposit() external payable;
-}
+import "../interfaces/IWETH.sol";
+import "../interfaces/IOneSplit.sol";
 
 contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     // ROUTER ADDRESSES
@@ -136,11 +109,6 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
             IERC20(WETH).balanceOf(address(this)) >= repayAmount,
             "Not enough WETH to repay loan after swaps"
         );
-
-        // More code here...
-        emit Log("bal", bal);
-        emit Log("repay", repayAmount);
-        emit Log("bal - repay", bal - repayAmount);
     }
 
     function UniswapSwap(
@@ -167,40 +135,13 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
                 address(this),
                 block.timestamp
             );
-        require(
-            output[output.length - 1] > amountIn,
-            "Not a profitable arbitrage"
-        );
+        // require(
+        //     output[output.length - 1] > amountIn,
+        //     "Not a profitable arbitrage"
+        // );
         return output[output.length - 1];
     }
-
-    function _oneSplitSwap(
-        address _from,
-        address _to,
-        uint256 _amount,
-        uint256 _minReturn,
-        uint256[] memory _distribution
-    ) public payable {
-        IERC20 _fromIERC20 = IERC20(_from);
-        IERC20 _toIERC20 = IERC20(_to);
-        IOneSplit _oneSplitContract = IOneSplit(ONE_SPLIT_ADDRESS);
-        // Approve tokens
-        _fromIERC20.approve(ONE_SPLIT_ADDRESS, _amount);
-
-        // Swap tokens: give _from, get _to
-        _oneSplitContract.swap(
-            _fromIERC20,
-            _toIERC20,
-            _amount,
-            _minReturn,
-            _distribution,
-            FLAGS
-        );
-
-        // Reset approval
-        _fromIERC20.approve(ONE_SPLIT_ADDRESS, 0);
-    }
-
+    
     // get weth function
     function getWETH(uint256 amount) public payable {
         IWETH(WETH).deposit{ value: amount }();
