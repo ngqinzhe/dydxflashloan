@@ -7,18 +7,20 @@ import "../interfaces/ICallee.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-
-interface IWETH {
-    function withdraw(uint256 amount) external;
-
-    function deposit() external payable;
-}
+import "../interfaces/IWETH.sol";
+import "../interfaces/IOneSplit.sol";
 
 contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
     // ROUTER ADDRESSES
     address private constant SOLO = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
     address private constant UNISWAP_V2_ROUTER =
         0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    // 1INCH config
+    address private constant ONE_SPLIT_ADDRESS =
+        0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E;
+    uint256 PARTS = 10;
+    uint256 FLAGS = 0;
 
     // ERC20 TOKENS ADDRESSES
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -101,17 +103,15 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
 
         // ARBITRAGE LOGIC HERE ...
         uint256 tradeAmount = repayAmount;
-        uint256 receivedAmount = UniswapPath(swapPath, tradeAmount, 0);
+        uint256 receivedAmount = UniswapSwap(swapPath, tradeAmount, 0);
         getWETH(receivedAmount);
-        require(IERC20(WETH).balanceOf(address(this)) >= repayAmount, "Not enough WETH to repay loan after swaps");
-
-        // More code here...
-        emit Log("bal", bal);
-        emit Log("repay", repayAmount);
-        emit Log("bal - repay", bal - repayAmount);
+        require(
+            IERC20(WETH).balanceOf(address(this)) >= repayAmount,
+            "Not enough WETH to repay loan after swaps"
+        );
     }
 
-    function UniswapPath(
+    function UniswapSwap(
         address[] memory myPath,
         uint256 amountIn,
         uint256 amountOutMin
@@ -135,13 +135,13 @@ contract DyDxSoloMargin is ICallee, DydxFlashloanBase {
                 address(this),
                 block.timestamp
             );
-        require(
-            output[output.length - 1] > amountIn,
-            "Not a profitable arbitrage"
-        );
+        // require(
+        //     output[output.length - 1] > amountIn,
+        //     "Not a profitable arbitrage"
+        // );
         return output[output.length - 1];
     }
-
+    
     // get weth function
     function getWETH(uint256 amount) public payable {
         IWETH(WETH).deposit{ value: amount }();
